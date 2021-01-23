@@ -69,13 +69,13 @@ class ImageDataset(torch.utils.data.Dataset):
         return self.data_num
 
     def __getitem__(self, idx):
-        out_data = self.ts(self.data[idx][0])
+        out_data = self.data[idx][0]
         out_label =  np.array(self.data[idx][1])
         if self.transform1:
             out_data1 = self.transform1(out_data)
         if self.transform2:
             out_data2 = self.transform2(out_data)
-        return self.ts2(out_data), out_data1, out_data2, out_label
+        return out_data, out_data1, out_data2, out_label
     
 class LitAutoEncoder(pl.LightningModule):
 
@@ -89,12 +89,10 @@ class LitAutoEncoder(pl.LightningModule):
         self.dims = (32*2, 32*2) 
         self.mean, self.std =[0.5,0.5,0.5], [0.25,0.25,0.25]
         self.trans2 = torchvision.transforms.Compose([
-            torchvision.transforms.ToTensor(), 
             torchvision.transforms.Normalize(self.mean, self.std),
             torchvision.transforms.Resize(self.dims)
         ])
         self.trans1 =  torchvision.transforms.Compose([
-            torchvision.transforms.ToTensor(),
             torchvision.transforms.Normalize(self.mean, self.std),
             MyAddGaussianNoise(0., 0.5),
             torchvision.transforms.Grayscale()
@@ -176,7 +174,7 @@ def main():
     summary(autoencoder.encoder,(1,32,32))
     summary(autoencoder,(1,32,32))
     
-    trainer = pl.Trainer(max_epochs=100, gpus=1, callbacks=[MyPrintingCallback()]) ####epoch
+    trainer = pl.Trainer(max_epochs=1, gpus=1, callbacks=[MyPrintingCallback()]) ####epoch
     
     trainer.fit(autoencoder)    
     print('training_finished')
@@ -200,7 +198,7 @@ def main():
     pretrained_model.freeze()
     pretrained_model.eval()
 
-    latent_dim,ver = "Gray2ClolarizationResize", "100"  #####save condition
+    latent_dim,ver = "Gray2ClolarizationResize", "1"  #####save condition
     dataiter = iter(autoencoder.valloader)
     images0,images, images1, labels = dataiter.next()
     # show images
