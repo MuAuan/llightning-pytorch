@@ -83,21 +83,7 @@ class Encoder(nn.Module):
         x0 = x.view(x.size(0), -1)
         y = self.classifier(x0)
         return x3, y
-"""
-class Latent(nn.Module):
-    def __init__(self):
-        super(Latent, self).__init__()
-        self.latent = nn.Sequential(
-            nn.Flatten(),
-            nn.Linear(512*4*4, 1000), 
-            nn.ReLU(), 
-            nn.Linear(1000, 10)
-        )
-    def forward(self, x):
-        x = self.latent(x)
-        #x = x.reshape(32,256,4,4)
-        return x
-"""    
+
 class Decoder(nn.Module):
     def __init__(self):
         super(Decoder, self).__init__()
