@@ -7,15 +7,23 @@ import torch.nn.functional as F
 import numpy as np
 import time
 
-class customize_resnet18(nn.Module):
-  def __init__(self, input_size=32):
-    super(customize_resnet18, self).__init__()
+class customize_model(nn.Module):
+  def __init__(self, input_size=128, sel_model='resnet18'):
+    super(customize_model, self).__init__()
     
-    ## First half: ResNet
-    self.resnet = models.resnet18(pretrained=True) #, num_classes=10) #365) 
-    #resnet = models.vgg16_bn(pretrained=True) #, num_classes=10) #365) 
-    #resnet = models.wide_resnet50_2(pretrained=True) #, num_classes=10) #365) 
-    #self.resnet = models.mobilenet_v2(pretrained=True)
+    ## Select model
+    if sel_model == 'resnext50':
+        self.model_ = models.resnext50_32x4d(pretrained=True)
+    elif sel_model == 'vgg16':
+        self.model_ = models.vgg16_bn(pretrained=True) #, num_classes=10) #365) 
+    elif sel_model == 'wide50':
+        self.model_ = models.wide_resnet50_2(pretrained=True) #, num_classes=10) #365) 
+    elif sel_model == 'mobilev2':
+        self.model_ = models.mobilenet_v2(pretrained=True)
+    elif sel_model == 'densenet121':
+        self.model_ = models.densenet121(pretrained=True)
+    else:
+        self.model_ = models.resnet18(pretrained=True)
     
     # Change first conv layer to accept single-channel (grayscale) input
     #resnet.conv1.weight = nn.Parameter(resnet.conv1.weight.sum(dim=1).unsqueeze(1)) 
@@ -25,8 +33,18 @@ class customize_resnet18(nn.Module):
     #self.midlevel_resnet = nn.Sequential(*list(resnet.children())[0]) #VGG16_bn 
     #self.midlevel_resnet = nn.Sequential(*list(resnet.children())[0:8]) #resnet18
     
-    for param in self.resnet.parameters():
-        param.requires_grad = False #True #False
+    for i, param in enumerate(self.model_.parameters()):
+        if i >= 20:
+            param.requires_grad = False #True #False
+        print(i, param.requires_grad)
+    
+    j =0
+    for name,  param in self.model_.named_parameters():
+        param.requires_grad = True
+        if j >= 10:
+            param.requires_grad = False
+        print(j, name, param.requires_grad)
+        j +=1
     
     self.f_resnet = nn.Sequential(
         #nn.ConvTranspose2d(512, 128, kernel_size=(2, 2), stride=(2, 2)),
@@ -41,11 +59,9 @@ class customize_resnet18(nn.Module):
     
   def forward(self, input):
 
-    # Pass input through ResNet-gray to extract features
-    #midlevel_features = self.midlevel_resnet(input)
-    midlevel_features = self.resnet(input)
+    midlevel_features = self.model_(input)
     output = self.f_resnet(midlevel_features)
-    return output    
+    return output
 
 def main():
     
@@ -54,6 +70,7 @@ def main():
     print(device)
 
     pl.seed_everything(0)
+    """
 
     #model = models.resnet18(pretrained=False, num_classes=10)
     #model = models.vgg16_bn(pretrained=False, num_classes=10)
@@ -62,11 +79,9 @@ def main():
     model = model.to(device) #for gpu
     print(model)
 
-    dim = (3,256,256)
+    dim = (3,128,128)
     summary(model,dim)
     
-
-    """
     resnet = models.resnet18(num_classes=10)
     midlevel_resnet = nn.Sequential(*list(resnet.children())[0:8])
     f_resnet = nn.Sequential(*list(resnet.children())[8:10])
@@ -78,14 +93,16 @@ def main():
     summary(model1,dim)
     #summary(model2,(512,1,1))
     """
-
-    dim = (3,256,256)
-    resnet_customize = customize_resnet18(256)
-    model = resnet_customize.to(device) #for gpu
-    print('model_customize = ',model)
-    summary(model,dim)
-
-
+    dim = (3,128,128)
+    sel_model_list = ['resnet18', 'vgg16', 'wide50', 'mobilev2', 'densenet121' ]
+    for list_ in sel_model_list:
+        customize_ = customize_model(128, sel_model = list_)
+        model = customize_.to(device) #for gpu
+        print('model_customize {}= '.format(list_),model)
+        if list_ == 'densenet121':
+            pass
+        else:
+            summary(model,dim)
 
     """
     for param in model.parameters():

@@ -21,7 +21,7 @@ import tensorboard
 
 from sam import SAM
 
-from model_print import customize_resnet18
+from model_print import customize_model
 #from net_cifar10 import Net_cifar10
 #from net_vgg16 import VGG16
 
@@ -60,7 +60,7 @@ class LitProgressBar(ProgressBar):
         return bar
     
 class Net(pl.LightningModule):
-    def __init__(self, input_size =32, data_dir='./'):
+    def __init__(self, input_size =32, sel_model = 'resnet18', data_dir='./'):
         super().__init__()
         self.data_dir = data_dir
 
@@ -76,7 +76,7 @@ class Net(pl.LightningModule):
         
         #self.net = Net_cifar10()
         #self.net = VGG16()
-        self.net = customize_resnet18(input_size=input_size )
+        self.net = customize_model(input_size=input_size, sel_model = 'resnet18' ) #'vgg16', 'wide50', 'mobilev2', 'densenet121'
         
         self.train_acc = pl.metrics.Accuracy()
         self.val_acc = pl.metrics.Accuracy()
@@ -167,15 +167,20 @@ def main():
     pl.seed_everything(0)
     # model
     size_ = 32*4
-    net = Net(input_size = size_)
+    sel_model_ = 'resnext50' #'densenet121'  #'wide50'  #'mobilev2' #'vgg16' #'resnet18'
+    net = Net(input_size = size_, sel_model = sel_model_) #'vgg16', 'wide50', 'mobilev2', 'densenet121', 
     model = net.to(device)  #for gpu
-    summary(model,(3,size_,size_))
+    print(sel_model_ , model)
+    #summary(model,(3,size_,size_))
     early_stopping = EarlyStopping('val_acc')  #('val_loss'
     bar = LitProgressBar(refresh_rate = 10, process_position = 1)
     #lr_monitor = LearningRateMonitor(logging_interval='step')
 
     trainer = pl.Trainer(gpus=1, max_epochs=10,callbacks=[MyPrintingCallback(), bar]) # progress_bar_refresh_rate=10
     trainer.fit(model)
+    path_ = './categorize/'
+    PATH = path_+'model_{}_cifar10_.ckpt'.format(sel_model_ )
+    trainer.save_checkpoint(PATH)
     results = trainer.test()
     print(results)
     
