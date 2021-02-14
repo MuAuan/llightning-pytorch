@@ -15,9 +15,10 @@ class customize_model(nn.Module):
     if sel_model == 'resnext50':
         self.model_ = models.resnext50_32x4d(pretrained=True)
     elif sel_model == 'vgg16':
-        self.model_ = models.vgg16_bn(pretrained=True) #, num_classes=10) #365) 
+        model_0 = models.vgg16_bn(pretrained=True) 
+        self.model_ = nn.Sequential(*list(model_0.children())[0]) #VGG16_bn 
     elif sel_model == 'wide50':
-        self.model_ = models.wide_resnet50_2(pretrained=True) #, num_classes=10) #365) 
+        self.model_ = models.wide_resnet50_2(pretrained=True) 
     elif sel_model == 'mobilev2':
         self.model_ = models.mobilenet_v2(pretrained=True)
     elif sel_model == 'densenet121':
@@ -34,6 +35,10 @@ class customize_model(nn.Module):
     #self.midlevel_resnet = nn.Sequential(*list(resnet.children())[0:8]) #resnet18
     
     for i, param in enumerate(self.model_.parameters()):
+        param.requires_grad = True #False
+        #print(i, param.requires_grad)
+    """
+    for i, param in enumerate(self.model_.parameters()):
         if i >= 20:
             param.requires_grad = False #True #False
         print(i, param.requires_grad)
@@ -41,22 +46,32 @@ class customize_model(nn.Module):
     j =0
     for name,  param in self.model_.named_parameters():
         param.requires_grad = True
-        if j >= 10:
+        if j <= 44: #83: #140:
             param.requires_grad = False
         print(j, name, param.requires_grad)
         j +=1
-    
-    self.f_resnet = nn.Sequential(
-        #nn.ConvTranspose2d(512, 128, kernel_size=(2, 2), stride=(2, 2)),
-        #nn.BatchNorm2d(128),
-        #nn.ReLU(),
-        #nn.Flatten(),
-        #nn.Dropout(p=0.2, inplace=False),
-        nn.Linear(in_features=np.int(1000), out_features=10, bias=True) #wide_resnet50-2 512*256
-        #nn.Linear(in_features=np.int(input_size*input_size/2), out_features=10, bias=True) #resnet18, vgg16
-        #*list(resnet.children())[9:10]
-    )    
-    
+    """
+    if sel_model =='vgg16':
+        self.f_resnet = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(in_features=np.int(512*2*2), out_features=2048, bias=True), #wide_resnet50-2 512*256
+            nn.ReLU(),
+            nn.Dropout(p=0.2, inplace=False),
+            nn.Linear(in_features=np.int(512*2*2), out_features=1000, bias=True), #wide_resnet50-2 512*256
+            nn.Linear(in_features=np.int(1000), out_features=10, bias=True) #wide_resnet50-2 512*256
+            )    
+    else:
+        self.f_resnet = nn.Sequential(
+            #nn.ConvTranspose2d(512, 128, kernel_size=(2, 2), stride=(2, 2)),
+            #nn.BatchNorm2d(128),
+            #nn.ReLU(),
+            #nn.Flatten(),
+            #nn.Dropout(p=0.2, inplace=False),
+            nn.Linear(in_features=np.int(1000), out_features=10, bias=True) #wide_resnet50-2 512*256
+            #nn.Linear(in_features=np.int(input_size*input_size/2), out_features=10, bias=True) #resnet18, vgg16
+            #*list(resnet.children())[9:10]
+            )   
+
   def forward(self, input):
 
     midlevel_features = self.model_(input)
@@ -99,7 +114,7 @@ def main():
         customize_ = customize_model(128, sel_model = list_)
         model = customize_.to(device) #for gpu
         print('model_customize {}= '.format(list_),model)
-        if list_ == 'densenet121':
+        if list_ == 'densenet121' or list_ == 'vgg16':
             pass
         else:
             summary(model,dim)

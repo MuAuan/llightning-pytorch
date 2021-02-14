@@ -76,7 +76,7 @@ class Net(pl.LightningModule):
         
         #self.net = Net_cifar10()
         #self.net = VGG16()
-        self.net = customize_model(input_size=input_size, sel_model = 'resnet18' ) #'vgg16', 'wide50', 'mobilev2', 'densenet121'
+        self.net = customize_model(input_size=input_size, sel_model = sel_model ) #'vgg16', 'wide50', 'mobilev2', 'densenet121'
         
         self.train_acc = pl.metrics.Accuracy()
         self.val_acc = pl.metrics.Accuracy()
@@ -166,8 +166,8 @@ def main():
     print(device)
     pl.seed_everything(0)
     # model
-    size_ = 32*4
-    sel_model_ = 'resnext50' #'densenet121'  #'wide50'  #'mobilev2' #'vgg16' #'resnet18'
+    size_ = 32*3 #32*8
+    sel_model_ ='mobilev2'    #'resnext50' #'densenet121'  #'wide50'  #'mobilev2' #'vgg16' #'resnet18'
     net = Net(input_size = size_, sel_model = sel_model_) #'vgg16', 'wide50', 'mobilev2', 'densenet121', 
     model = net.to(device)  #for gpu
     print(sel_model_ , model)
